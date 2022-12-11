@@ -33,6 +33,15 @@ cts.Cancel();
 
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 {
+    if (update.Message.Type == MessageType.Sticker)
+    {
+        await botClient.SendStickerAsync(
+        chatId: update.Message.Chat.Id,
+        sticker: update.Message.Sticker.FileId,
+        cancellationToken: cancellationToken);
+        return;
+    }
+
     // Only process Message updates: https://core.telegram.org/bots/api#message
     if (update.Message is not { } message)
         return;
@@ -42,23 +51,36 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
     var chatId = message.Chat.Id;
 
-    Console.WriteLine($"Received a '{messageText}' message in chat {chatId}.");
+    Console.WriteLine($"Received a '{message.Text}' message in chat {chatId}.");
+
+    var people = new Dictionary<string, string>()
+    {
+        { "Привет" , "Привет" },
+        { "Как дела" , "Супер" },
+        { "Как ты" , "Все хорошо" }
+    };
 
     string messageAnswerText = "";
     switch (message.Text)
     {
-        case "Кот":
-            messageAnswerText = "Вы кот";
+        case "Привет":
+            messageAnswerText = "Привет";
+            break;
+        case "Как дела?":
+            messageAnswerText = "Супер, а у тебя?";
             break;
         default:
-            messageAnswerText = "Вы собака сутулая";
-            break;
+            await botClient.SendPhotoAsync(
+                chatId: chatId,
+                photo: "https://www.meme-arsenal.com/memes/fa3ede4abb27c0f923e46373adf548b8.jpg",
+                cancellationToken: cancellationToken);
+            return;
     }
 
     // Echo received message text
     Message sentMessage = await botClient.SendTextMessageAsync(
         chatId: chatId,
-        text: messageAnswerTextне,
+        text: messageAnswerText,
         cancellationToken: cancellationToken);
 }
 
