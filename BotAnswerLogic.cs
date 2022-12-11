@@ -21,11 +21,17 @@ namespace Bot_kot
 
         public async Task ReceiveAsync(Update update, CancellationToken cancellationToken)
         {
+            
             if (update.Message.Type == MessageType.Sticker)
             {
+                var stickerSet = await telegramBotClient.GetStickerSetAsync(update.Message.Sticker.SetName);
+                var stickers = stickerSet.Stickers;
+                Random random = new Random();
+                var selectSticker = stickers[random.NextInt64(0, stickers.Length)];
+                Console.WriteLine(update.Message.Sticker.FileId);
                 await telegramBotClient.SendStickerAsync(
                 chatId: update.Message.Chat.Id,
-                sticker: update.Message.Sticker.FileId,
+                sticker: selectSticker.FileId,
                 cancellationToken: cancellationToken);
                 return;
             }

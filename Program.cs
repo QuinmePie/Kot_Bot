@@ -11,9 +11,9 @@ var botClient = new TelegramBotClient("5492951142:AAHOqs9esWnt4omwKk47XVHIURiR-Z
 using CancellationTokenSource cts = new();
 var BotKnowledge = new Dictionary<string, string>()
     {
-        { "Привет" , "Привет" },
-        { "Как дела" , "Супер" },
-        { "Как ты" , "Все хорошо" }
+        { "привет" , "Привет" },
+        { "как дела" , "Супер" },
+        { "как ты" , "Все хорошо" }
     };
 
 var TelegramBotLogic = new BotAnswerLogic(botClient, BotKnowledge);
