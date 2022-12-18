@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Bot_kot.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
@@ -12,8 +8,8 @@ namespace Bot_kot
     internal class BotAnswerLogic
     {
         private readonly TelegramBotClient telegramBotClient;
-        private readonly Dictionary<string, string> botAnswerDictionary;
-        public BotAnswerLogic(TelegramBotClient telegramBotClient, Dictionary<string, string> botAnswerDictionary)
+        private readonly Dictionary<string, ActionModel> botAnswerDictionary;
+        public BotAnswerLogic(TelegramBotClient telegramBotClient, Dictionary<string, ActionModel> botAnswerDictionary)
         {
             this.telegramBotClient = telegramBotClient;
             this.botAnswerDictionary = botAnswerDictionary;
@@ -21,7 +17,7 @@ namespace Bot_kot
 
         public async Task ReceiveAsync(Update update, CancellationToken cancellationToken)
         {
-            
+
             if (update.Message.Type == MessageType.Sticker)
             {
                 var stickerSet = await telegramBotClient.GetStickerSetAsync(update.Message.Sticker.SetName);
@@ -35,7 +31,7 @@ namespace Bot_kot
                 cancellationToken: cancellationToken);
                 return;
             }
-            string answer = "";
+            ActionModel answer = null;
             string textMessage = update.Message.Text.ToLower().Trim();
             foreach (var value in botAnswerDictionary.Keys)
             {
@@ -45,23 +41,57 @@ namespace Bot_kot
                     break;
                 };
             }
-            if (string.IsNullOrEmpty(answer))
+            if (answer == null)
             {
-                await telegramBotClient.SendPhotoAsync(
-                chatId: update.Message.Chat.Id,
-                photo: "https://www.meme-arsenal.com/memes/fa3ede4abb27c0f923e46373adf548b8.jpg",
-                cancellationToken: cancellationToken);
+                var emojiService = new Emoji();
+                var rand = new Random();
+                string randomEmogi = emojiService.EmojiList
+                    .ElementAt(rand.Next(0, emojiService.EmojiList.Count())).Code;
+                await telegramBotClient.SendTextMessageAsync(
+                  chatId: update.Message.Chat.Id,
+                  text: randomEmogi,
+                  cancellationToken: cancellationToken);
                 return;
             }
             else
             {
-                await telegramBotClient.SendTextMessageAsync(
-                chatId: update.Message.Chat.Id,
-                text: answer,
-                cancellationToken: cancellationToken);
+                AnswerAsync(answer, update);
             }
         }
 
+        private async Task AnswerAsync(ActionModel actionModel, Update update)
+        {
+            switch (actionModel.ActionType)
+            {
+                case ActionTypes.AnswerMessage:
+                    await telegramBotClient.SendTextMessageAsync(
+                    chatId: update.Message.Chat.Id,
+                    text: actionModel.Value);
+                    break;
+                case ActionTypes.AnswerStiker:
+                    await telegramBotClient.SendStickerAsync(
+                    chatId: update.Message.Chat.Id,
+                    sticker: actionModel.Value);
+                    break;
+                case ActionTypes.AnswerPicture:
+                    await telegramBotClient.SendPhotoAsync(
+                    chatId: update.Message.Chat.Id,
+                    photo: actionModel.Value);
+                    break;
+                case ActionTypes.AnswerRandomStiker:
+                    var stickerSet = await telegramBotClient.GetStickerSetAsync(actionModel.Value);
+                    var stickers = stickerSet.Stickers;
+                    Random random = new Random();
+                    var selectSticker = stickers[random.NextInt64(0, stickers.Length)];
+                    await telegramBotClient.SendStickerAsync(
+                    chatId: update.Message.Chat.Id,
+                    sticker: selectSticker.FileId);
+                    break;
+                case ActionTypes.AnswerEmoji:
 
+                default:
+                    break;
+            }
+        }
     }
 }
